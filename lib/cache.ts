@@ -31,8 +31,9 @@ export const mongooseAggregationQuery = () => {
 };
 
 // @ts-ignore
-mongoose.Query.prototype.cache = function () {
+mongoose.Query.prototype.cache = function (options: { key: string } = {}) {
   this.useCache = true;
+  this.hashkey = JSON.stringify(options.key || "");
   return this;
 };
 
@@ -50,7 +51,8 @@ export const mongooseQuery = () => {
       })
     );
     // console.log(key)
-    const cacheValue = await redis.get(key);
+    const cacheValue = await redis.hget(this.hashkey, key);
+    console.log(key, this.hashkey);
     if (cacheValue) {
       console.log("query cache");
       const doc = JSON.parse(cacheValue);
@@ -60,7 +62,11 @@ export const mongooseQuery = () => {
     }
     const result = await exec.apply(this, arguments);
     // console.log(result)
-    redis.set(key, JSON.stringify(result));
+    redis.hset(this.hashkey, key, JSON.stringify(result));
     return result;
   };
+};
+
+export const clearHash = (hashkey: string) => {
+  redis.del(JSON.stringify(hashkey));
 };

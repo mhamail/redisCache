@@ -1,6 +1,7 @@
 // @ts-nocheck
 import User from "../model/user";
 import { Request, Response } from "express";
+import { clearHash } from "../../lib/cache";
 import { redis } from "../../lib/redisconn";
 import { createClient } from "redis";
 import util from "util";
@@ -26,8 +27,9 @@ export const create = async (req: Request, res: Response) => {
   } catch (err) {
     console.log(err);
   }
+  clearHash("123")
 };
-// _id:new mongoose.Types.ObjectId("6600c9cd3985176abe505e60")
+
 export const list = async (req: Request, res: Response) => {
   try {
     const pipeline: any[] = [
@@ -37,8 +39,27 @@ export const list = async (req: Request, res: Response) => {
     
     ];
     // @ts-ignore
-    // const data = await model.find({}).cache();
-    const data = await model.aggregate(pipeline).cache();
+    const data = await model.find({}).cache({key:"123"});
+    // const data = await model.aggregate(pipeline).cache();
+    res.json(data);
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ error: "An error occurred while connecting to Redis." });
+  }
+};
+export const list2 = async (req: Request, res: Response) => {
+  try {
+    const pipeline: any[] = [
+      {
+        $match: {_id:new mongoose.Types.ObjectId("6600c9cd3985176abe505e60")},
+      },
+    
+    ];
+    // @ts-ignore
+    const data = await model.find({_id:"6600c9cd3985176abe505e60"}).cache({key:"123"});
+    // const data = await model.aggregate(pipeline).cache();
     res.json(data);
   } catch (error) {
     console.error(error);
