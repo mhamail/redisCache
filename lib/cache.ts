@@ -5,8 +5,9 @@ const execAggregate = mongoose.Aggregate.prototype.exec;
 const exec = mongoose.Query.prototype.exec;
 
 // @ts-ignore
-mongoose.Aggregate.prototype.cache = function () {
+mongoose.Aggregate.prototype.cache = function (options: { key: string } = {}) {
   this.useCache = true;
+  this.hashkey = JSON.stringify(options.key || "");
   return this;
 };
 export const mongooseAggregationQuery = () => {
@@ -17,15 +18,16 @@ export const mongooseAggregationQuery = () => {
     // console.log("I am inside a mongo Aggregation query function");
     // console.log("aggregation", this._pipeline);
     const key = JSON.stringify(this._pipeline);
+    // console.log(key, this.hashkey);
     // console.log(key)
-    const cacheValue = await redis.get(key);
+    const cacheValue = await redis.hget(this.hashkey, key);
     if (cacheValue) {
       console.log("aggregation cache");
       return JSON.parse(cacheValue);
     }
 
     const result = await execAggregate.apply(this, arguments);
-    redis.set(key, JSON.stringify(result));
+    redis.hset(this.hashkey, key, JSON.stringify(result));
     return result;
   };
 };
@@ -52,7 +54,7 @@ export const mongooseQuery = () => {
     );
     // console.log(key)
     const cacheValue = await redis.hget(this.hashkey, key);
-    console.log(key, this.hashkey);
+    // console.log(key, this.hashkey);
     if (cacheValue) {
       console.log("query cache");
       const doc = JSON.parse(cacheValue);

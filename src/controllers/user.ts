@@ -39,8 +39,8 @@ export const list = async (req: Request, res: Response) => {
     
     ];
     // @ts-ignore
-    const data = await model.find({}).cache({key:"123"});
-    // const data = await model.aggregate(pipeline).cache();
+    // const data = await model.find({}).cache({key:"123"});
+    const data = await model.aggregate(pipeline).cache({key:"123"});
     res.json(data);
   } catch (error) {
     console.error(error);
